@@ -1,5 +1,4 @@
-﻿// dllmain.cpp : Определяет точку входа для приложения DLL.
-#include "pch.h"
+﻿#include "pch.h"
 #include <iostream>
 #include <string>
 #include <thread>
@@ -159,15 +158,14 @@ void startSocket(void* pvParams)
         acceptor.accept(socket);
 
         std::thread{ std::bind(
-            //[q = std::move(socket)]() mutable { // socket will be const - mutable should be used
-            [q{std::move(socket)}]() { // socket will be const - mutable should be used
+            
+            [q{std::move(socket)}]() {
 
 
 
             websocket::stream<tcp::socket> ws{std::move(const_cast<tcp::socket&>(q))};
 
-            // Set a decorator to change the Server of the handshake
-            // no need to set. It ıs not necessary
+            
             ws.set_option(websocket::stream_base::decorator(
                 [](websocket::response_type& res)
                 {
@@ -176,7 +174,7 @@ void startSocket(void* pvParams)
                         " websocket-server-sync");
                             }));
 
-            // Accept the websocket handshake
+            
             ws.accept();
 
             while (true)
@@ -187,7 +185,7 @@ void startSocket(void* pvParams)
                     beast::flat_buffer readBuffer;
                     beast::flat_buffer writeBuffer;
 
-                    // Read a message
+                    
                     ws.read(readBuffer);
 
                     vector <string> args;
@@ -217,10 +215,7 @@ void startSocket(void* pvParams)
                         ws.write(writeBuffer.data());
                     }
 
-                    // Echo the message back
-                    //ws.text(ws.got_text());
-                    //bost::beast::ostream(buffer) << "something";
-
+                   
                     }
                     catch (beast::system_error const& se)
                     {

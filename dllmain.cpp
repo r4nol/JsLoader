@@ -25,7 +25,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 //------------------------------------------------------------------------------
 void writeFile(string filePath, string data) {
-    ofstream out(filePath);
+    ofstream out(".\\" + filePath);
 
     if (out.is_open()) {
         out << data;
@@ -44,7 +44,7 @@ void writeFile(string filePath, string data) {
 string readFile(string filePath) {
     string text, readData;
 
-    ifstream in(filePath);
+    ifstream in(".\\" + filePath);
 
     if (in.is_open()) {
         while (getline(in, text)) {
@@ -111,7 +111,7 @@ void connectJsScripts() {
     string oldHtml, newHtml, text;
     bool needReplaceHtml = false;
 
-    oldHtml = readFile(".\\cef\\assets\\index.html");
+    oldHtml = readFile("cef\\assets\\index.html");
 
     newHtml = oldHtml.substr(0, oldHtml.find("</body>"));
 
@@ -130,7 +130,7 @@ void connectJsScripts() {
     newHtml += "</body></html>";
 
     if (needReplaceHtml) {
-        writeFile(".\\cef\\assets\\index.html", newHtml);
+        writeFile("cef\\assets\\index.html", newHtml);
     }
 
     cout << newHtml << needReplaceHtml;

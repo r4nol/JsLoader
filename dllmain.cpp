@@ -99,7 +99,7 @@ vector <string> getListOfScripts() {
     else {
         BOOST_LOG_TRIVIAL(info) << "No folder mods, creating...";
 
-        fs::create_directory(".\\cef\\assets\\mods");
+        fs::create_directory(modsPath);
     }
 
     return listOfScripts;
@@ -109,18 +109,24 @@ void connectJsScripts() {
     BOOST_LOG_TRIVIAL(info) << "Started connect js scripts...";
 
     string oldHtml, newHtml, text;
-    bool needReplaceHtml = false;
+    vector <string> listOfScripts;
+
+    listOfScripts = getListOfScripts();
+
+    if (listOfScripts.size() == 0) {
+        BOOST_LOG_TRIVIAL(info) << "No scripts in folder mods...";
+        return;
+    }
 
     oldHtml = readFile("cef\\assets\\index.html");
 
     newHtml = oldHtml.substr(0, oldHtml.find("</body>"));
 
-    for (auto script : getListOfScripts()) {
+    for (auto script : listOfScripts) {
 
         if (oldHtml.find(script) == -1) {
-            needReplaceHtml = true;
 
-            newHtml += "<script src=\"mods\\" + script + "\"></script>";
+            newHtml += "<script src=\"mods/" + script + "\"></script>";
 
             BOOST_LOG_TRIVIAL(info) << "Added script -> " + script;
         }
@@ -129,20 +135,18 @@ void connectJsScripts() {
 
     newHtml += "</body></html>";
 
-    if (needReplaceHtml) {
-        writeFile("cef\\assets\\index.html", newHtml);
-    }
+    writeFile("cef\\assets\\index.html", newHtml);
 
-    cout << newHtml << needReplaceHtml;
+    return;
 }
 
 void startSocket(void* pvParams)
 {
 
-    connectJsScripts();
     init_logging();
 
     BOOST_LOG_TRIVIAL(info) << "Socket has started on port 2011...";
+    connectJsScripts();
 
     auto const address = net::ip::make_address("127.0.0.1");
     auto const port = static_cast<unsigned short>(std::atoi("2011"));
@@ -158,14 +162,14 @@ void startSocket(void* pvParams)
         acceptor.accept(socket);
 
         std::thread{ std::bind(
-            
+
             [q{std::move(socket)}]() {
 
 
 
             websocket::stream<tcp::socket> ws{std::move(const_cast<tcp::socket&>(q))};
 
-            
+
             ws.set_option(websocket::stream_base::decorator(
                 [](websocket::response_type& res)
                 {
@@ -174,7 +178,7 @@ void startSocket(void* pvParams)
                         " websocket-server-sync");
                             }));
 
-            
+
             ws.accept();
 
             while (true)
@@ -185,7 +189,7 @@ void startSocket(void* pvParams)
                     beast::flat_buffer readBuffer;
                     beast::flat_buffer writeBuffer;
 
-                    
+
                     ws.read(readBuffer);
 
                     vector <string> args;
@@ -215,7 +219,7 @@ void startSocket(void* pvParams)
                         ws.write(writeBuffer.data());
                     }
 
-                   
+
                     }
                     catch (beast::system_error const& se)
                     {

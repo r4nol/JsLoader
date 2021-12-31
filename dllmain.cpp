@@ -23,7 +23,34 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+const string VERSION = "0.2";
+
 //------------------------------------------------------------------------------
+void sendCommand(string command) {
+    // нажатие F6
+    keybd_event(VK_F6, 0, 0, 0);
+    keybd_event(VK_F6, 0, KEYEVENTF_KEYUP, 0);
+
+    // набор команды в чат
+    INPUT ip;
+    ip.type = INPUT_KEYBOARD;
+    ip.ki.time = 0;
+    ip.ki.dwFlags = KEYEVENTF_UNICODE;
+    ip.ki.wVk = 0;
+    ip.ki.dwExtraInfo = 0;
+    for (size_t i = 0; i < command.size(); ++i)
+    {
+        ip.ki.wScan = command[i];
+        SendInput(1, &ip, sizeof(INPUT));
+    }
+
+    // нажатие Enter - отправка команды
+    keybd_event(VK_RETURN, 0, 0, 0);
+    keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+
+    return;
+}
+
 void writeFile(string filePath, string data) {
     ofstream out(".\\" + filePath);
 
@@ -62,6 +89,8 @@ string readFile(string filePath) {
     return readData;
 }
 
+// --------------------------------------------------------------------------
+
 void init_logging()
 {
     logging::register_simple_formatter_factory<logging::trivial::severity_level, char>("Severity");
@@ -75,11 +104,15 @@ void init_logging()
     logging::add_common_attributes();
 }
 
+// ---------------------------------------------------------------------------
+
 vector <string> getListOfScripts() {
     BOOST_LOG_TRIVIAL(info) << "Getting list of scripts in folder mods...";
 
     string modsPath = ".\\cef\\assets\\mods";
     vector <string> listOfScripts;
+
+
 
     if (fs::exists(modsPath)) {
 
@@ -139,6 +172,8 @@ void connectJsScripts() {
 
     return;
 }
+
+// -------------------------------------------------------------------------------
 
 void startSocket(void* pvParams)
 {
@@ -216,6 +251,18 @@ void startSocket(void* pvParams)
                         BOOST_LOG_TRIVIAL(info) << "User connected...";
 
                         boost::beast::ostream(writeBuffer) << "connection established";
+                        ws.write(writeBuffer.data());
+                    }
+
+                    if (args[0] == "sendCommand") {
+
+                        if (args[1][0] == '/') {
+                            sendCommand(args[1]);
+                        }
+                    }
+
+                    if (args[0] == "getVersion") {
+                        boost::beast::ostream(writeBuffer) << VERSION;
                         ws.write(writeBuffer.data());
                     }
 

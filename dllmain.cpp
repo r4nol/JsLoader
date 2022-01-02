@@ -23,9 +23,23 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-const string VERSION = "0.2";
+const string VERSION = "0.21";
 
 //------------------------------------------------------------------------------
+int getInputMehtod() {
+    HWND hwnd = GetForegroundWindow();
+
+    if (hwnd) {
+        DWORD threadID = GetWindowThreadProcessId(hwnd, NULL);
+        HKL currentLayout = GetKeyboardLayout(threadID);
+
+        unsigned int x = (unsigned int)currentLayout & 0x0000FFFF;
+
+        return ((int)x);
+    }
+    return 0;
+}
+
 void sendCommand(string command) {
     // нажатие F6
     keybd_event(VK_F6, 0, 0, 0);
@@ -142,6 +156,7 @@ void connectJsScripts() {
     BOOST_LOG_TRIVIAL(info) << "Started connect js scripts...";
 
     string oldHtml, newHtml, text;
+    bool needWriteHtml = false;
     vector <string> listOfScripts;
 
     listOfScripts = getListOfScripts();
@@ -158,6 +173,7 @@ void connectJsScripts() {
     for (auto script : listOfScripts) {
 
         if (oldHtml.find(script) == -1) {
+            needWriteHtml = true;
 
             newHtml += "<script src=\"mods/" + script + "\"></script>";
 
@@ -165,6 +181,8 @@ void connectJsScripts() {
         }
 
     }
+
+    if (!needWriteHtml) return;
 
     newHtml += "</body></html>";
 
@@ -237,7 +255,7 @@ void startSocket(void* pvParams)
                     if (args[0] == "readFile") {
                         BOOST_LOG_TRIVIAL(info) << "Client requires read file " + args[1];
 
-                        boost::beast::ostream(writeBuffer) << readFile(args[1]);
+                        boost::beast::ostream(writeBuffer) << "readFile|" << readFile(args[1]);
                         ws.write(writeBuffer.data());
                     }
 
@@ -245,13 +263,6 @@ void startSocket(void* pvParams)
                         BOOST_LOG_TRIVIAL(info) << "Client requires write file " + args[1] + ". With data : " + args[2];
 
                         writeFile(args[1], args[2]);
-                    }
-
-                    if (args[0] == "userConnected") {
-                        BOOST_LOG_TRIVIAL(info) << "User connected...";
-
-                        boost::beast::ostream(writeBuffer) << "connection established";
-                        ws.write(writeBuffer.data());
                     }
 
                     if (args[0] == "sendCommand") {
@@ -262,7 +273,12 @@ void startSocket(void* pvParams)
                     }
 
                     if (args[0] == "getVersion") {
-                        boost::beast::ostream(writeBuffer) << VERSION;
+                        boost::beast::ostream(writeBuffer) << "version|" << VERSION;
+                        ws.write(writeBuffer.data());
+                    }
+
+                    if (args[0] == "getKeyboardLayout") {
+                        boost::beast::ostream(writeBuffer) << "keyboardLayout|" << getInputMehtod();
                         ws.write(writeBuffer.data());
                     }
 
